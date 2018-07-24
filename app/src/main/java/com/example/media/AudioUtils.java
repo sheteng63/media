@@ -60,8 +60,8 @@ public class AudioUtils {
                 }
                 // 文件大小
                 if (cursor.getString(8) != null) {
-                    float size = cursor.getInt(8) / 8;
-                    if (size > 1024 * 1024/8) {
+                    float size = cursor.getInt(8) / 1024 / 1024;
+                    if (size > 1) {
                         song.setSize(size);
                     } else {
                         continue;

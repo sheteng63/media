@@ -4,9 +4,15 @@ import java.util.ArrayList
 
 object MediaManage {
     var mediaOp: MediaOp? = null
-    var getProgess: (Song, Int) -> Unit = { song: Song, i: Int -> }
+    var getProgess: (Int) -> Unit = { i: Int -> }
+    var currentProgress: Int = 0
     var getSongs: (ArrayList<Song>) -> Unit = {}
+    var songChange: (Song) -> Unit = {}
+    var currentSong: Song? = null
     var songs: ArrayList<Song>? = null
+    var fftListener: (ByteArray?) -> Unit = {}
+
+
     fun setService(mediaOp: MediaOp) {
         this.mediaOp = mediaOp
     }
@@ -24,7 +30,7 @@ object MediaManage {
         mediaOp?.stop()
     }
 
-    fun setProgressListener(function: (Song, Int) -> Unit) {
+    fun setProgressListener(function: (Int) -> Unit) {
         getProgess = function
     }
 
@@ -33,6 +39,15 @@ object MediaManage {
         if (songs != null) {
             function(songs!!)
         }
+    }
+
+    fun setSongChangeListener(function: (Song) -> Unit) {
+        songChange = function
+    }
+
+
+    fun onFftDataListener(function: (ByteArray?) -> Unit) {
+        fftListener = function
     }
 
 }

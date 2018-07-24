@@ -1,4 +1,4 @@
-package com.example.media
+package com.example.media.activitys
 
 import android.Manifest
 import android.content.Intent
@@ -11,9 +11,10 @@ import android.widget.TextView
 import kotlinx.android.synthetic.main.activity_main.*
 import android.support.v4.app.ActivityCompat
 import android.content.pm.PackageManager
-import android.provider.MediaStore
 import android.support.v4.content.ContextCompat
 import android.support.v4.content.PermissionChecker.PERMISSION_GRANTED
+import com.example.media.*
+import org.jetbrains.anko.startActivity
 
 
 class MainActivity : AppCompatActivity() {
@@ -23,18 +24,29 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        MediaManage.setProgressListener { song, it ->
-            runOnUiThread {
-                music_name.text = song.fileName
-                progressBar.max = song.size.toInt()
-            }
+        MediaManage.setProgressListener { it ->
             progressBar.progress = it
+
+        }
+
+        MediaManage.setSongChangeListener {
+            runOnUiThread {
+                music_name.text = it.fileName
+                progressBar.max = it.duration
+            }
+        }
+
+
+
+        progressBar.progress = MediaManage.currentProgress
+        if (MediaManage.currentSong != null) {
+            music_name.text = MediaManage.currentSong?.fileName
+            progressBar.max = MediaManage.currentSong!!.duration / 60
         }
 
         adapter = RecyclerViewAdapter(R.layout.music_item, { view, i ->
             val text = view.findViewById<TextView>(R.id.music_text)
             text.text = songs!![i].fileName
-            var path = songs!![i].fileUrl
             view.setOnClickListener {
                 MediaManage.playing(i)
             }
@@ -52,7 +64,7 @@ class MainActivity : AppCompatActivity() {
         requestAllPower()
 
         control.setOnClickListener {
-            MediaManage.pause()
+            startActivity<PlayingActivity>()
         }
 
     }
@@ -64,12 +76,13 @@ class MainActivity : AppCompatActivity() {
 
     fun requestAllPower() {
         if (ContextCompat.checkSelfPermission(this,
-                        Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                        Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(this,
+        Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                             Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
             } else {
                 ActivityCompat.requestPermissions(this,
-                        arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE), 1)
+                        arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO), 1)
             }
         } else {
             getSongs()

@@ -4,6 +4,7 @@ import android.app.Service
 import android.content.Intent
 import android.media.AudioManager
 import android.media.MediaPlayer
+import android.media.audiofx.Visualizer
 import android.os.IBinder
 import android.provider.MediaStore
 import kotlinx.coroutines.experimental.*
@@ -34,9 +35,24 @@ class DeamonPlay : Service(), MediaOp {
         }
 
         MediaManage.setService(this)
-        songs =  AudioUtils.getAllSongs(this)
+        songs = AudioUtils.getAllSongs(this)
         MediaManage.getSongs(songs!!)
         MediaManage.songs = songs
+
+        val visualizer = Visualizer(mediaPlayer!!.audioSessionId)
+        visualizer.setCaptureSize(Visualizer.getCaptureSizeRange()[0])
+        visualizer.setDataCaptureListener(object : Visualizer.OnDataCaptureListener {
+            override fun onWaveFormDataCapture(p0: Visualizer?, p1: ByteArray?, p2: Int) {
+
+            }
+
+            override fun onFftDataCapture(p0: Visualizer?, p1: ByteArray?, p2: Int) {
+                MediaManage.fftListener(p1)
+            }
+
+
+        }, Visualizer.getMaxCaptureRate() / 4, false, true)
+        visualizer.setEnabled(true)
     }
 
 
@@ -51,25 +67,34 @@ class DeamonPlay : Service(), MediaOp {
                 start(i)
             }
         } else if (status == Status.PAUSE) {
-            mediaPlayer?.start()
-            status = Status.PALYING
+            if (playingId == i) {
+                mediaPlayer?.start()
+                status = Status.PALYING
+            } else {
+                start(i)
+            }
         }
     }
 
     fun start(i: Int) {
-
+        lau?.cancel()
+        var song = songs!![i]
         mediaPlayer?.reset()
-        mediaPlayer?.setDataSource(songs!![i].fileUrl)
+        mediaPlayer?.setDataSource(song.fileUrl)
         mediaPlayer?.prepare()
         mediaPlayer?.start()
         status = Status.PALYING
         lau = launch(CommonPool) {
+            var i = 0
             while (status == Status.PALYING) {
-                delay(1000)
-                MediaManage.getProgess(songs!![playingId],mediaPlayer?.currentPosition!!)
+                delay(300)
+                i += 300
+                MediaManage.getProgess(i)
             }
         }
         playingId = i
+        MediaManage.currentSong = song
+        MediaManage.songChange(song)
     }
 
     override fun stop() {
