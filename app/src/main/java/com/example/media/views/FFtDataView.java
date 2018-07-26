@@ -46,7 +46,6 @@ public class FFtDataView extends SurfaceView implements SurfaceHolder.Callback {
         paint.setColor(Color.RED);
         paint.setStyle(Paint.Style.FILL);
         startDraw();
-
     }
 
     private void initThread() {
@@ -57,6 +56,9 @@ public class FFtDataView extends SurfaceView implements SurfaceHolder.Callback {
         runnable = new Runnable() {
             @Override
             public void run() {
+                while (isliving) {
+                    drawPath();
+                }
             }
         };
         thread = new Thread(runnable);
@@ -104,9 +106,9 @@ public class FFtDataView extends SurfaceView implements SurfaceHolder.Callback {
             canvas.drawColor(Color.WHITE);
 
 
-            for (int i = 0; i < bytes.length ; i++) {
+            for (int i = 0; i < bytes.length; i++) {
                 if (i % 1 == 0) {
-                    int left = 0 + withSpec * i / 128 ;
+                    int left = 0 + withSpec * i / 128;
                     int down = heightSpec / 2;
                     int right = left + withSpec / 128;
                     int top = down - Math.abs(bytes[i]) * 5;
