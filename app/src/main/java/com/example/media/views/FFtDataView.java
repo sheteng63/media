@@ -8,6 +8,7 @@ import android.graphics.PorterDuff;
 import android.graphics.RectF;
 import android.os.Handler;
 import android.util.AttributeSet;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -27,39 +28,40 @@ public class FFtDataView extends SurfaceView implements SurfaceHolder.Callback {
 
     public FFtDataView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        System.out.println("FFtDataView");
+        System.out.println("FFtDataView" + Thread.currentThread().getName());
+        holder = getHolder();
+        holder.addCallback(this);
         initView();
     }
 
-    Paint paint;
-    int withSpec;
-    int heightSpec;
-    byte[] bytes;
-    boolean isliving = true;
+    private Paint paint;
+    private int withSpec;
+    private int heightSpec;
+    private byte[] bytes;
+    private boolean isliving = false;
+    private int times = 0;
 
     private void initView() {
-        holder = getHolder();
-        holder.addCallback(this);
         paint = new Paint();
         paint.setColor(Color.RED);
         paint.setStyle(Paint.Style.FILL);
-        paint.setStrokeWidth(1f);
-
+        startDraw();
 
     }
 
     private void initThread() {
+        if (thread != null) {
+            return;
+        }
         isliving = true;
         runnable = new Runnable() {
             @Override
             public void run() {
-                while (isliving) {
-                    drawPath();
-                }
             }
         };
         thread = new Thread(runnable);
         thread.start();
+
     }
 
     @Override
@@ -67,40 +69,53 @@ public class FFtDataView extends SurfaceView implements SurfaceHolder.Callback {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         withSpec = View.MeasureSpec.getSize(widthMeasureSpec);
         heightSpec = View.MeasureSpec.getSize(heightMeasureSpec);
+        paint.setStrokeWidth(withSpec / 128);
+    }
+
+    public void startDraw() {
+        initThread();
+    }
+
+    public synchronized void stopDraw() {
+        isliving = false;
+        this.notify();
     }
 
 
     public void setData(byte[] bytes) {
-        this.bytes = bytes;
-        if (thread != null) {
-            synchronized (this) {
-                this.notify();
-
-            }
+        if (!isliving) {
+            return;
+        }
+        if (thread == null) {
+            return;
+        }
+        synchronized (this) {
+            this.bytes = bytes;
+            this.notify();
         }
 
     }
-
 
     private void drawPath() {
 
         try {
             Canvas canvas = holder.lockCanvas();
+
             canvas.drawColor(Color.WHITE);
-            for (int i = 0; i < bytes.length; i++) {
+
+
+            for (int i = 0; i < bytes.length ; i++) {
                 if (i % 1 == 0) {
-                    int left = 0 + withSpec * i / 128;
+                    int left = 0 + withSpec * i / 128 ;
                     int down = heightSpec / 2;
                     int right = left + withSpec / 128;
                     int top = down - Math.abs(bytes[i]) * 5;
-                    RectF rectF = new RectF(left, top, right, down);
-                    canvas.drawRect(rectF, paint);
+                    canvas.drawLine(left, down, left, top, paint);
                 }
             }
             if (canvas != null) {
                 holder.unlockCanvasAndPost(canvas);
             }
-
 
         } catch (Exception e) {
 
@@ -111,13 +126,14 @@ public class FFtDataView extends SurfaceView implements SurfaceHolder.Callback {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+
         }
     }
 
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
-        System.out.println("surfaceCreated");
-        initThread();
+        System.out.println("surfaceCreated" + Thread.currentThread().getName());
+        startDraw();
     }
 
     @Override
@@ -128,15 +144,8 @@ public class FFtDataView extends SurfaceView implements SurfaceHolder.Callback {
     @Override
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
         System.out.println("surfaceDestroyed");
-        isliving = false;
-        synchronized (this) {
-            try {
-                this.notify();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
+        stopDraw();
     }
+
 
 }

@@ -1,6 +1,5 @@
 package com.example.media
 
-import java.util.ArrayList
 
 object MediaManage {
     var mediaOp: MediaOp? = null
@@ -10,7 +9,6 @@ object MediaManage {
     var songChange: (Song) -> Unit = {}
     var currentSong: Song? = null
     var songs: ArrayList<Song>? = null
-    var fftListener: (ByteArray?) -> Unit = {}
 
 
     fun setService(mediaOp: MediaOp) {
@@ -46,8 +44,5 @@ object MediaManage {
     }
 
 
-    fun onFftDataListener(function: (ByteArray?) -> Unit) {
-        fftListener = function
-    }
 
 }

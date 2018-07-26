@@ -1,44 +1,27 @@
 package com.example.media.views
 
 import android.content.Context
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Path
-import android.graphics.Rect
+import android.graphics.*
 import android.util.AttributeSet
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
+import com.example.media.R
 
-class FftSurfaceView : SurfaceView, SurfaceHolder.Callback {
-    override fun surfaceChanged(p0: SurfaceHolder?, p1: Int, p2: Int, p3: Int) {
-
-    }
-
-    override fun surfaceDestroyed(p0: SurfaceHolder?) {
-        isLIving = false
-    }
-
-    override fun surfaceCreated(p0: SurfaceHolder?) {
-        thread = Thread(Runnable() {
-            while (true) {
-                drawPath()
-            }
-        })
-    }
+class FftSurfaceView : View {
 
     constructor(context: Context?) : super(context) {
         initView()
     }
 
 
-    var withSpec = 0
-    var heightSpec = 0
-    var fft: ByteArray? = null
-    var paint: Paint? = null
-    var path: Path? = null
-    var isLIving = true
-    var thread: Thread? = null
+    private var withSpec = 0
+    private var heightSpec = 0
+    private var fft: ByteArray? = null
+    private var paint: Paint? = null
+    private var path: Path? = null
+    private var list = ArrayList<Bitmap>()
+    private var bitmap: Bitmap? = null
 
 
     constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs) {
@@ -46,15 +29,9 @@ class FftSurfaceView : SurfaceView, SurfaceHolder.Callback {
     }
 
     private fun initView() {
-        holder.addCallback(this)
-        setFocusable(true)
-        setFocusableInTouchMode(true)
-
-        setKeepScreenOn(true)
         paint = Paint()
         paint?.color = Color.RED
-        paint?.setStyle(Paint.Style.FILL);
-        paint?.setStrokeWidth(1f)
+        bitmap = Bitmap.createBitmap(50,50,Bitmap.Config.ARGB_8888)
 
     }
 
@@ -66,24 +43,24 @@ class FftSurfaceView : SurfaceView, SurfaceHolder.Callback {
     }
 
     fun setData(fft: ByteArray?) {
+        println(fft)
         this.fft = fft
 
     }
 
-    private fun drawPath() {
-        if (isLIving) {
-            val canvas = holder.lockCanvas()
-            canvas?.drawColor(Color.WHITE)
-            fft?.forEachIndexed { index, byte ->
-                var left = 0 + withSpec * index / 128f
-                var down = heightSpec / 2
-                var right = left + withSpec / 128f
-                var top = down - byte.toInt() * 5
-                val rect = Rect(left.toInt(), top.toInt(), right.toInt(), down)
-                canvas?.drawRect(rect, paint)
-            }
-            if (isLIving && canvas != null) {
-                holder.unlockCanvasAndPost(canvas)
+
+    override fun onDraw(canvas: Canvas?) {
+        super.onDraw(canvas)
+        for (i in 0..16) {
+            if (i % 1 == 0) {
+                val left = 0 + withSpec * i / 128 * 8
+                val down = heightSpec / 2
+                val right = left + withSpec / 128 * 8
+                val top = down - fft!![i]
+                val rectF = RectF(left.toFloat(), top.toFloat(), right.toFloat(), down.toFloat())
+                val matrix = Matrix()
+                matrix.mapRect(rectF)
+                canvas?.drawBitmap(bitmap,matrix,paint)
             }
         }
     }

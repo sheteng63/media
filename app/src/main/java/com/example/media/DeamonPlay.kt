@@ -47,7 +47,7 @@ class DeamonPlay : Service(), MediaOp {
             }
 
             override fun onFftDataCapture(p0: Visualizer?, p1: ByteArray?, p2: Int) {
-                MediaManage.fftListener(p1)
+                VedioManage.getInstance().notifyFft(p1)
             }
 
 
